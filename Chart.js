@@ -6,389 +6,368 @@ function getElementStyle (eln) {
   return eln.currentStyle;
 }
 
+var ChalkStyle = function (Textalign = "center", font = "24px Arial", strokeStyle = "#e0e0e0",
+ lineWidth = 1, textBaseLine ="middle", fillStyle = "#000") {
+  return {Textalign, font, strokeStyle, lineWidth, textBaseLine};
+};
 
-function Canvas(canvas) {
+
+function Chalk(ss) {
   var obj = new Object();
-  var canvas = document.getElementById(canvas);
+
+  var s = ss;
+  obj.line = function(x1, y1, x2, y2, ctx) {
+    ctx = style(ctx);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.closePath();
+  }
+
+  obj.arc = function(x, y, radius, ctx) {
+    ctx = style(ctx);
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.closePath();
+  }
+
+  obj.text = function (x, y, text, ctx) {
+    ctx = style(ctx);
+    ctx.fillText(text, x, y);
+  }
+
+  obj.setStyle = function( chalkStyle) {
+    s = chalkStyle;
+  }
+
+  function style(ctx) {
+    return Object.assign( ctx, s);
+  }
+  
+  obj.rect = function(x1, y1, x2, y2, ctx) {
+    ctx = style(ctx);
+    var w = x2 - x1;
+    var h = y2 - y1;
+
+    ctx.fillRect(x1, y1, w, h);
+  }
+  return obj;
+
+}
+
+function Canvas(canvasid) {
+  var obj = new Object();
+  var canvas = document.getElementById(canvasid);
 
   if(!canvas.getContext){
-    console.error("there is a fatal error that canvas cannot be created, please check canvas-id put in before");
+    throw Error("failed to get context!");
     return;
   }
 
   var ctx = canvas.getContext("2d");
-  
-  obj.compatibleMode = function () {
-    var width = parseInt(getElementStyle(canvas)['width']);
-    var height = parseInt(getElementStyle(canvas)['height']);
 
-    canvas.width = width * 2;
-    canvas.height = height *2;
-    canvas.style.width = width  + "px";
-    canvas.style.height = height  + "px";
-
-    ctx.translate(0.5, 0.5);
-  }
-  
-  obj.getWidth = function () {
-    return canvas.width;
-  }
-
-  obj.getHeight = function() {
-    return canvas.height;
-  }
-
-  obj.getCTX = function () {
+  obj.getCtx = function(){
     return ctx;
   }
 
-  obj.getObject = function() {
+  obj.getWidth = function() {
+    return canvas.width;
+  }
+
+  obj.getHeight = function () {
+    return canvas.height;
+  }
+
+  obj.getInstance = function() {
     return canvas;
   }
+  // compatible mode
+
+  {
+    let width  = canvas.width ;
+    let height = canvas.height;
+    canvas.width = width *2;
+    canvas.height = height *2;
+
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+
+  }
+
+  ctx.translate(0.5, 0.5);
+  
   return obj;
 }
 
-function Chalk() {
-  var obj = new Object;
-
-  obj.drawLine = function (x1, y1, x2 ,y2, ctx, color = "#e0e0e0", lineWidth = 1) {
-      var oldcolor = ctx.strokeStyle;
-      ctx.strokeStyle = color;
-      ctx.lineWidth = lineWidth;
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-      ctx.closePath();
-      ctx.strokeStyle = oldcolor;
+function Prompt() {
+  // document operation
+  {
+    document.body.style.position="relative";
   }
 
-  obj.setFont = function (name, align, width, ctx) {
-    ctx.font = name;
-    ctx.textAlign = align;
-    ctx.lineWidth = width;
-  }
-
-  obj.drawText = function (text,x, y, ctx,align = "right", font = "24px Arial") {
-    ctx.font = font;
-    ctx.strokeStyle = "#E0E0E0";
-    ctx.textAlign = align;
-    ctx.lineWidth = 2; 
-    ctx.textBaseLine = "middle";
-
-    ctx.fillText(text,x,y);
-  }
-
-  obj.drawRect = function (x1, y1, x2, y2, ctx) {
-    w  = Math.abs(x1 - x2);
-    h  = Math.abs(y1 - y2);
-    ctx.fillStyle = "rgba(0,0,255,0.5)";
-  
-    ctx.fillRect(x1,y1, w,h);
-  }
-
-  obj.drawRect2 = function (x, y, w, h, ctx, style) {
-
-    ctx.fillStyle = style;
-  
-    ctx.fillRect(x,y, w,h);
-  }
-
-
-  obj.drawPoint = function (x1, y1, ctx, color = "#ff00ff") {
-    var oldcolor = ctx.strokeStyle;
-    ctx.strokeStyle = color;
-    ctx.beginPath();
-    ctx.arc(x1,y1,10,0, 2* Math.PI);
-    ctx.stroke();
-    ctx.closePath();
-    ctx.strokeStyle = oldcolor;
-  }
-
-  return obj;
-}
-
-function CMath() {
-  this.ceil = function (x,mod = 50) {
-    return x + mod - (x % mod);
-  }
-
-  // x = margin 
-  // y = mod 
-  // z = something % (mod)
-
-  this.ratio = function(x, y , z) {
-    return z / y * x;
-  }
-
-  this.randomElement = function (array) {
-    var r = Math.floor(Math.random() * array.length);
-    return array[r];
-  }
-}
-
-function Chart(canvas, chalk, prompt) {
-  var obj = new Object;
-
-  var ck = chalk;
-  var cv = canvas;
-  var ctx = cv.getCTX();
-  var pmt = prompt;
-
-  cv.compatibleMode();
-
-  const basePointMarginLeft = 120;
-  const basePointMarginTop = 160;
-  
-  const basePointMarginRight = cv.getWidth() - 60;
-  const basePointMarginBottom = cv.getHeight()-80;
-  
-
-  // to calculate ratios 
-
-  var margin = 0;
-  var m = 0;
-
-  var titlePositions = [];
-  var setPositions = [];
-  obj.strokeBaseLine = function (table, mod = 50) {
-    
-    var max = 0;
-    var span = 0;  
-    m = mod;
-
-    ck.drawLine(basePointMarginLeft, basePointMarginBottom,basePointMarginRight, basePointMarginBottom,ctx, "#000000");
-    ck.drawLine(basePointMarginLeft,basePointMarginTop, basePointMarginLeft, basePointMarginBottom, ctx,"#000000");
-    ck.drawLine(basePointMarginRight-20,basePointMarginBottom-10,basePointMarginRight,basePointMarginBottom, ctx,"#000000");
-    ck.drawLine(basePointMarginRight-20,basePointMarginBottom+10,basePointMarginRight,basePointMarginBottom, ctx,"#000000");
-
-    ck.drawLine(basePointMarginLeft-10,basePointMarginTop+20,basePointMarginLeft,basePointMarginTop, ctx,"#000000");
-    ck.drawLine(basePointMarginLeft+10,basePointMarginTop+20,basePointMarginLeft,basePointMarginTop, ctx,"#000000");
-
-
-    table.sets.map(function(b, i) {
-      b.values.map(function(v, n) {
-        if( max < v) 
-          max = v;
-      });
-    });
-
-    max = new CMath().ceil(max, mod); 
-    span = max / mod;
-    margin = (basePointMarginBottom-basePointMarginTop) / (span+1);
-    var startPosition = basePointMarginBottom ;
-
-    for(var i = 1; i <= span; i++) {
-      ck.drawLine(basePointMarginLeft, startPosition - margin * i, basePointMarginRight, startPosition - margin * i, ctx);
-      ck.drawText(i * mod, basePointMarginLeft-20, startPosition - margin * i,ctx);
-    }
-
-  }
-
-
-  function translate(x) {
-    var v = Math.floor(x / m);
-    var v1 = new CMath().ratio(margin, m, (x % m));
-    return basePointMarginBottom - (margin* v + v1);
-  }
-
-  obj.drawTitle = function(titles) {    
-    titlePositions = getTitlePositions(titles);
-    titlePositions.map(function(t, n){
-      ck.drawText(titles[n], t,basePointMarginBottom +30,ctx,"center");
-    });
-  }
-
-  function getTitlePositions(titles) {
-    var length = titles.length + 1;
-    var margin = (canvas.getWidth()-basePointMarginLeft) / length;
-    var startPosition = margin + basePointMarginLeft;
-
-    return titles.map(function(t, n) {
-      return margin * n + startPosition;
-    });
-  }
-
-  function datasets(sets) {
-    return sets.map(function(set, index) {
-       return set.values.map(function(value, ndex) {
-        return translate(value);
-      });
-    });
-  }
-
-
-  obj.drawDatasets = function(sets) {
-    setPositions = datasets(sets);
-    var colors = ["#ff0000", "#00ff00"];
-    sets.map(function (set, index) {
-      set.values.map(function(v, n) {
-        ck.drawText(v, titlePositions[n], setPositions[index][n]-m/3,ctx,"center", "18px Arial");
-        ck.drawPoint(titlePositions[n], setPositions[index][n],ctx,colors[index]);
-      });
-    });
-  }
-
-  obj.drawLines = function(sets) {
-    var colors = ["#ff0000", "#00ff00"];
-    sets.map(function(set, index) {
-      set.values.map(function(v, n) {
-        ck.drawLine(titlePositions[n], setPositions[index][n], titlePositions[n+1], setPositions[index][n+1], ctx, colors[index]);
-      });
-    });
-  }
-
-  obj.drawSetLabels = function(sets) {
-    var colors = ["#ff0000", "#00ff00"];
-    sets.map(function(set, index) {
-      ck.drawRect2(basePointMarginRight - m*3, basePointMarginTop + m/2 * index, 20,10, ctx, colors[index]);
-      ck.drawText(set.name, basePointMarginRight - m *3 + m , basePointMarginTop + m/2*index+6, ctx, "start", "12px Arial");
-    })
-  }
-
-  obj.strokeTableName = function(name) {
-    var baseLine = cv.getWidth() / 2 ;
-    ck.drawText(name, baseLine, basePointMarginTop , ctx, "center", "30px Arial");
-  }
-  
-  obj.strokeLabels = function(table) {
-    this.strokeTableName(table.name);
-    this.drawTitle(table.titles);
-    this.drawDatasets(table.sets);
-    this.drawLines(table.sets);
-    this.drawSetLabels(table.sets);
-  }
-
-  obj.listen = function() {
-    var count = 0;
-    cv.getObject().addEventListener("mousemove", function (event) {
-   
-    count =(count+1) % 5;
-    
-    if(!count) {
-        pmt.display(event.clientX, event.clientY);
-       
-      }
-    });
-
-    // cv.getObject().addEventListener("mouseleave", function (event) {
-    //    pmt.undisplay();
-    // });
-  }
-  return obj;
-}
-
-
-
-
-
-function Prompt(div) {
   var obj = new Object();
-  var id = Math.random().toString(32).substr(5);
-  console.log(id);
-  var parent = document.createElement("div");
-  var style = document.createElement("style");
-  
-  var title = document.createElement("p");
-  var content = document.createElement("p");
-  title.appendChild(document.createTextNode("hello world"));
-  content.appendChild(document.createTextNode("content 1"));
 
-  parent.appendChild(title);
-  parent.appendChild(content);
-
-  parent.id = id;
-  style.type = "text/css";
+  var container = document.createElement("div");
+  var head = document.createElement("div");
+  var body = document.createElement("div");
   
-  var css = cssText(id);
-  try {
-    style.appendChild(document.createTextNode(css));
-  }catch(e) {
-    style.styleSheet.cssText = css;
-  }
-
-  document.getElementsByTagName("head")[0].appendChild(style);
-  document.body.appendChild(parent);
-  document.body.style.display = "relative";
-  parent.style.display = "none";
-  parent.style.position = "absolute";
-  
-  var tx = 0;
-  var ty = 0;
   var visibility = false;
-
-  var fragment = document.createDocumentFragment();
-
-  function cssText(id) {
-    return "#"+id+"{transition: all 0.2s linear; -moz-transition:all 0.2s linear; -webkit-transition:all 0.2s linear;\
-    position:absolute; width: 150px; height: 100px; border-radius: 10px;\
-    background:rgba(0,0,0,0.5);\
-    }";
+  function css(width = 150, height = 100) {
+    return "-webkit-transition:all 0.3s linear; width:" + width + "px; height:" + height + "px;\
+    display:none; position:absolute;background:rgba(0,0,0,0.5);padding:5px;border-radius:10px;\
+    ";
   }
-  function show(x =0 ,y= 0){
-    if(visibility == false) {
-      parent.style.display = "none";
-      return;
+  container.style = css();
+  obj.init = function (sets) {
+    container.appendChild(head);
+    container.appendChild(body);
+    document.body.appendChild(container);
+    setBody(sets);
+  }
+
+  obj.setTitle = function(title) {
+    var child = null;
+  }
+
+  // set : [{name, value},{name, value}]
+  function setBody(sets) {
+    sets.forEach(function (set,index) {
+      var p = document.createElement("p");
+      p.style.fontSize = "12px";
+      body.appendChild(p);
+    });    
+  }
+
+  obj.show = function(x, y,v, xv,r) {
+    visibility = v;
+    render(x, y, xv,r );
+  }
+
+  function render(x, y, xv, r) {
+    container.style.display = visibility ? "block" : "none";
+
+    if(!visibility) return;
+
+    if(r) body.childNodes.forEach(function(child, index) {
+      child.innerText = "label:" + xv[index].n + ", value:" + xv[index].v;
+    });
+
+    container.style.left = x + "px";
+    container.style.top = y + "px";
+  }
+
+  return obj;
+
+}
+
+
+function Rect(x, y, w, h) {
+    return {x, y, w, h};
+}
+
+
+function Chart(canvas, prompt) {
+
+  var obj = new Object();
+
+
+  var cv = canvas;
+  var ctx = cv.getCtx();
+
+  var wr = cv.getWidth() / 10;
+  var hr = cv.getHeight() / 10;
+
+  var labs = [];
+  var sets = [];
+  var max = 0;
+  
+  var callback = null;
+
+  const rect = new Rect(wr, hr, cv.getWidth()- wr, cv.getHeight() - hr);
+
+  function drawAxios(style = null) {
+    var s = style? style: new ChalkStyle();
+    var stroke = new Chalk(s);
+    stroke.line(rect.x, rect.h, rect.w, rect.h, ctx);
+    stroke.line(rect.x, rect.h, rect.x, rect.y, ctx);
+  }
+
+  function drawBaseLine(style = null) {
+    var s = style ? style : new ChalkStyle();
+    s.strokeStyle = "#fefefe";
+    var stroke = new Chalk(s);
+
+  }
+
+  obj.getTable = function(table) {
+    labs = table.labels;
+    sets = table.sets;
+    prompt.init(sets);
+  }
+
+  function drawLabels() {
+    var s = new ChalkStyle();
+    s.font = "18px Arial";
+    s.textAlign = "center";
+    var stroke = new Chalk(s);
+
+    var m = rect.w / (labs.length +1);
+    var h = rect.h / (labs.length +1);
+    labs.forEach(function(label, index, array) {
+      var x = rect.x +m/2 + m * index;
+      var y = rect.h + 20;
+      stroke.text(x, y, label, ctx);
+    });
+    
+  }
+
+  function drawY(){
+    var s = new ChalkStyle();
+    s.font = "18px Arial";
+    s.textAlign = "end";
+    var stroke = new Chalk(s);
+
+
+    sets.forEach(function(set, index, array) {
+      set.values.forEach(function(v, n) {
+        if(max < v) max = v;
+      });
+    });
+
+    // must alert it , to increase the flexiblity;
+    var tmax = max + 100  - (max %100);
+    var p = tmax / 100;
+    var h = rect.h / (p+1);
+
+    for(var i = 0; i <= p; i++ ) {
+      var x = rect.x - 20;
+      var y = rect.h - h * (i);
+      stroke.text(x, y, i * 100, ctx);
+      
+    }
+  }
+
+  function positions() {
+
+    var tmax = max + 100  - (max %100);
+    var p = tmax / 100;
+    var h = rect.h / (p+1);
+    var m = rect.w / (labs.length +1);
+
+    return sets.map(function(set, index){
+      var lname = set.name;
+      var values = set.values;
+      
+      var newValues = values.map(function(vl, n) {
+        var nx = rect.x + m /2 + m * n;
+        var ny = rect.h - (h * vl /100 + vl % 100 / 100 * h);
+        return {x: nx,y: ny ,v: vl };
+      });
+      return {name: lname, values: newValues};
+    });
+  }
+
+  
+  function drawSets() {
+    var s = new ChalkStyle();
+    s.strokeStyle = "#aaaaaa";
+    s.textAlign = "center";
+    s.font = "15px Arial";
+    var stroke = new Chalk(s);
+
+    var newSets = positions();
+    
+    newSets.forEach(function(set, index, array) {
+      set.values.forEach(function(v, i, a) {
+        stroke.arc(v.x, v.y, 10,ctx);
+        stroke.text(v.x, v.y -15, v.v, ctx);
+      });
+    });
+
+    // line
+    
+    function onShow(cb) {
+      callback = cb;
     }
 
-    tx = x ? x: tx;
-    ty = y ? y: ty;
-    
-    parent.style.display = "block";
-    parent.style.left = tx +"px";
-    parent.style.top = ty +"px";
-  }
-
-  obj.display = function(x, y) {
-    visibility = true;
-    show(x, y);
-  }
-
-  obj.setData = function(dataset) {
-    
-    dataset.map(function(data, index){
-      
-      fragment.appendChild();
+    newSets.forEach(function(set, index, array) {
+      for(var i = 0; i <set.values.length -1; i++) {
+        stroke.line(set.values[i].x, set.values[i].y, set.values[i+1].x, set.values[i+1].y,ctx);
+      }
     });
-    return this;
   }
 
+  function listen() {
+    var op = 0;
+    var r = false;
+    var m = rect.w / (labs.length +1);
+    var count = 0;
+    cv.getInstance().addEventListener("mousemove", function(event) {
+      event.preventDefault();
+      var x = event.clientX;
+      var y = event.clientY;
+      
+      var xv = [];
 
-  obj.undisplay = function() {
-    visibility = false;
-    show();
+      var pos = 0;
+      for(let i = 0; i < labs.length; i++) {
+        if(x < m*i){
+          pos = i;
+          break;
+        }
+      }
+
+      if(op !== pos) {
+        op = pos;
+        r = true;
+        sets.forEach(function(set, index){
+          xv.push({n: set.name,v:set.values[op]});
+        });
+      }else r = false;   
+
+      v = true;
+      prompt.show(x, y, v,xv, r);
+
+    });
   }
 
+  obj.draw = function(){
+    drawAxios();
+    drawLabels();
+    drawY();
+    drawSets();
+    listen();
+  }
 
   return obj;
 }
 
-function main() {
-  var canvas = new Canvas("canvas");
-  var chalk = new Chalk();
-  var prompt = new Prompt();
 
-  var chart = new Chart(canvas,chalk,prompt);
+var canvas = new Canvas("canvas");
+var prompt = new Prompt();
+
+var table = {
+  name:'Hello World',
+  labels: ['2017', '2018', '2019', '2020'],
+  sets: [
+    {
+      name: 'Changsha',
+      values:[11,80, 115, 250],
+    },
+    {
+      name: 'Wuhan',
+      values:[90, 170, 500, 650],
+    },
+    {
+      name: 'Jiangxi',
+      values:[50, 230, 700, 850],
+    }
+  ]
+};
 
 
-  var table = {
-    name:'Hello World',
-    titles: ['2017', '2018', '2019', '2020'],
-    sets: [
-      {
-        name: 'Changsha',
-        values:[11,80, 115, 250],
-      },
-      {
-        name: 'Wuhan',
-        values:[90, 170, 500, 650],
-      }
-    ]
-  };
-
-  chart.strokeBaseLine(table, 50);
-  chart.strokeLabels(table);
-  chart.listen();
-}
-
-main();
+var chart = new Chart(canvas, prompt);
+chart.getTable(table);
+chart.draw();
