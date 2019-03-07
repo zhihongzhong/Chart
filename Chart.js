@@ -187,7 +187,7 @@ function Chart(canvas, prompt) {
 
   const rect = new Rect(wr, hr, cv.getWidth()- wr, cv.getHeight() - hr);
 
-  function drawAxios(style = null) {
+  function drawaxis(style = null) {
     var s = style? style: new ChalkStyle();
     var stroke = new Chalk(s);
     stroke.line(rect.x, rect.h, rect.w, rect.h, ctx);
@@ -334,7 +334,7 @@ function Chart(canvas, prompt) {
   }
 
   obj.draw = function(){
-    drawAxios();
+    drawaxis();
     drawLabels();
     drawY();
     drawSets();
